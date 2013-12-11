@@ -69,17 +69,16 @@ class SerialBSL5(bsl5.BSL5):
         self.blindWrite = False
         # delay after control line changes
         self.control_delay = 0.05
-        self.parity=serial.PARITY_EVEN
 
 
-    def open(self, port=0, baudrate=9600, ignore_answer=False):
+    def open(self, port=0, parity=serial.PARITY_EVEN, baudrate=9600, ignore_answer=False):
         self.ignore_answer = ignore_answer
         self.logger.info('Opening serial port %r' % port)
         try:
             self.serial = serial.serial_for_url(
                 port,
                 baudrate=baudrate,
-                parity=self.parity,
+                parity=parity,
                 stopbits=serial.STOPBITS_ONE,
                 timeout=1,
             )
@@ -87,7 +86,7 @@ class SerialBSL5(bsl5.BSL5):
             self.serial = serial.Serial(
                 port,
                 baudrate=baudrate,
-                parity=self.parity,
+                parity=parity,
                 stopbits=serial.STOPBITS_ONE,
                 timeout=1,
             )
@@ -285,6 +284,21 @@ class SerialBSL5Target(SerialBSL5, msp430.target.Target):
                 action="store_true",
                 help="TEST/TCK signal is muxed on TX line",
                 default=False)
+        group.add_option("--parity-none",
+                dest="parity",
+                action="store_const",
+                const=serial.PARITY_NONE,
+                help="Use no parity")
+        group.add_option("--parity-even",
+                dest="parity",
+                action="store_const",
+                const=serial.PARITY_EVEN,
+                help="Use even parity")
+        group.add_option("--parity-odd",
+                dest="parity",
+                action="store_const",
+                const=serial.PARITY_ODD,
+                help="Use even parity")
 
         self.parser.add_option_group(group)
 
@@ -338,6 +352,7 @@ class SerialBSL5Target(SerialBSL5, msp430.target.Target):
         self.logger = logging.getLogger('BSL')
         self.open(
             self.options.port,
+            parity = self.options.parity or serial.PARITY_EVEN,
             ignore_answer = self.options.ignore_answer,
         )
         self.control_delay = self.options.control_delay
