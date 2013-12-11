@@ -45,6 +45,7 @@ setup(
             'scripts/msp430-bsl-fcdprog',
             'scripts/msp430-bsl-legacy',
             'scripts/msp430-bsl-telosb',
+            'scripts/msp430-bsl-z1',
             'scripts/msp430-compare',
             'scripts/msp430-convert',
             'scripts/msp430-downloader',
