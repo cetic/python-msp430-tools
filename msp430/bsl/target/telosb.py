@@ -191,7 +191,7 @@ class TelosBTarget(SerialBSLTarget):
                 S1 = TEST << 1
             self.i2c_switch_write_cmd(S0|S1)
     
-    def start_bsl(self):
+    def start_bsl(self, prompt_before_release=False):
         """\
         Start the ROM-BSL using the pulse pattern on TEST and RST.
         """
