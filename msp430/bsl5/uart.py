@@ -157,7 +157,13 @@ class SerialBSL5(bsl5.BSL5):
 
     def bsl(self, cmd, message='', expect=None):
         self.bsl_header(cmd, message)
-        head = self.serial.read(3)
+        if self.extra_timeout is None:
+            head = self.serial.read(3)
+        else:
+            for timeout in range(self.extra_timeout):
+                head = self.serial.read(3)
+                if head:
+                    break
         if len(head) != 3: raise bsl5.BSL5Timeout('timeout while reading answer (header)')
         pi, length = struct.unpack("<BH", head)
         if pi == 0x80:
@@ -378,17 +384,16 @@ class SerialBSL5Target(SerialBSL5, msp430.target.Target):
 
         if self.options.do_mass_erase:
             self.logger.info("Mass erase...")
+            self.extra_timeout = 20
             try:
                 self.BSL_RX_PASSWORD('\xff'*30 + '\0'*2)
             except bsl5.BSL5Error:
                 pass # it will fail - that is our intention to trigger the erase
             time.sleep(1)
-            #~ self.extra_timeout = 6
-            #~ self.mass_erase()
-            #~ self.extra_timeout = None
             self.BSL_RX_PASSWORD('\xff'*32)
             # remove mass_erase from action list so that it is not done
             # twice
+            self.extra_timeout = None
             self.remove_action(self.mass_erase)
         else:
             if self.options.password is not None:
