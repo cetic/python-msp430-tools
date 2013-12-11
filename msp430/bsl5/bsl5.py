@@ -13,6 +13,7 @@ The bsl() method is responsible to implement the transport (e.g. serial
 port access, USB HID).
 """
 
+import array
 import struct
 
 # commands for the MSP430 target
@@ -70,8 +71,8 @@ class BSL5(object):
             raise BSL5Error('unknown response 0x%02x' % ord(data[0]))
 
     def BSL_RX_DATA_BLOCK(self, address, data):
-        packet = three_bytes(address) + data
-        answer = self.bsl(BSL_RX_DATA_BLOCK, packet, expect=0)
+        packet = struct.pack('<3s', three_bytes(address)) + array.array('B', data).tostring()
+        answer = self.bsl(BSL_RX_DATA_BLOCK, packet, expect=2)
         self.check_answer(answer)
 
     def BSL_RX_DATA_BLOCK_FAST(self, address, data):
@@ -80,7 +81,7 @@ class BSL5(object):
 
     def BSL_TX_DATA_BLOCK(self, address, length):
         packet = struct.pack('<3sH', three_bytes(address), length)
-        answer = self.bsl(BSL_TX_DATA_BLOCK, packet, expect=length)
+        answer = self.bsl(BSL_TX_DATA_BLOCK, packet, expect=length+1)
         self.check_answer(answer)
         return answer[1:]
 
@@ -89,14 +90,14 @@ class BSL5(object):
         self.check_answer(answer)
 
     def BSL_ERASE_SEGMENT(self, address):
-        answer = self.bsl(BSL_ERASE_SEGMENT, three_bytes(address), expect=0)
+        answer = self.bsl(BSL_ERASE_SEGMENT, three_bytes(address), expect=2)
         self.check_answer(answer)
 
     def BSL_LOAD_PC(self, address):
         self.bsl(BSL_LOAD_PC, three_bytes(address), receive_response=False)
 
     def BSL_RX_PASSWORD(self, password):
-        answer = self.bsl(BSL_RX_PASSWORD, password, expect=0)
+        answer = self.bsl(BSL_RX_PASSWORD, password, expect=2)
         self.check_answer(answer)
 
     def BSL_VERSION(self):
@@ -107,7 +108,7 @@ class BSL5(object):
         - API version
         - Peripheral interface version
         """
-        answer = self.bsl(BSL_VERSION, expect=4)
+        answer = self.bsl(BSL_VERSION, expect=5)
         self.check_answer(answer)
         return struct.unpack('<BBBBB', answer)[1:]
 

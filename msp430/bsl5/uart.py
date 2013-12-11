@@ -107,11 +107,10 @@ class SerialBSL5(bsl5.BSL5):
 
     def BSL_CHANGE_BAUD_RATE(self, multiply):
         packet = struct.pack('<B', multiply)
-        answer = self.bsl(BSL_CHANGE_BAUD_RATE, packet, expect=0)
-        self.check_answer(answer)
+        self.bsl_header(BSL_CHANGE_BAUD_RATE, packet)
 
 
-    def bsl(self, cmd, message='', expect=None):
+    def bsl_header(self, cmd, message=''):
         """\
         Low level access to the serial communication.
 
@@ -133,7 +132,7 @@ class SerialBSL5(bsl5.BSL5):
         self.logger.debug('Command 0x%02x %s' % (cmd, message.encode('hex')))
         # prepare command with checksum
         txdata = struct.pack('<BHB', 0x80, 1+len(message), cmd) + message
-        txdata += struct.pack('<H', reduce(crc_update, txdata, 0xffff))   # append checksum
+        txdata += struct.pack('<H', reduce(crc_update, struct.pack('<B', cmd)+message, 0xffff))   # append checksum
         #~ self.logger.debug('Sending command: %r' % (txdata.encode('hex'),))
         # transmit command
         self.serial.write(txdata)
@@ -153,26 +152,29 @@ class SerialBSL5(bsl5.BSL5):
                 if ans:
                     break
         if ans != BSL5_ACK:
-            if ans: raise bsl5.BSL5Error('BSL reports error: %s' % BSL5_UART_ERROR_CODES.get(ans, 'unknown error'))
+            if ans: raise bsl5.BSL5Error('BSL reports error: %s (%s)' % (BSL5_UART_ERROR_CODES.get(ans, 'unknown error'), ans))
             raise bsl5.BSL5Error('No ACK received (timeout)')
 
+    def bsl(self, cmd, message='', expect=None):
+        self.bsl_header(cmd, message)
         head = self.serial.read(3)
         if len(head) != 3: raise bsl5.BSL5Timeout('timeout while reading answer (header)')
         pi, length = struct.unpack("<BH", head)
-        if pi == '\x80':
+        if pi == 0x80:
             data = self.serial.read(length)
             if len(data) != length: raise bsl5.BSL5Timeout('timeout while reading answer (data)')
             crc_str = self.serial.read(2)
             if len(crc_str) != 2: raise bsl5.BSL5Timeout('timeout while reading answer (CRC)')
             crc = struct.unpack("<H", crc_str)
-            crc_expected = reduce(crc_update, head + data, 0xffff)
-            if crc != crc_expected:
-                raise bsl5.BSLException('CRC error in answer')
+            crc_expected = reduce(crc_update, data, 0xffff)
+            crc_expected = struct.pack('<H', crc_expected)
+            if crc_str != crc_expected:
+                raise bsl5.BSL5Exception('CRC error in answer')
             if expect is not None and length != expect:
                 raise bsl5.BSL5Error('expected %d bytes, got %d bytes' % (expect, len(data)))
             return data
         else:
-            if pi: raise bsl5.BSL5Error('received bad PI, expected 0x80 (got 0x%02x)' % (ord(pi),))
+            if pi: raise bsl5.BSL5Error('received bad PI, expected 0x80 (got 0x%02x)' % (pi))
             raise bsl5.BSL5Error('received bad PI, expected 0x80 (got empty response)')
 
 
@@ -381,8 +383,8 @@ class SerialBSL5Target(SerialBSL5, msp430.target.Target):
         if self.options.speed is not None:
             try:
                 self.set_baudrate(self.options.speed)
-            except bsl5.BSLError:
-                raise bsl5.BSLError("--speed option not supported by BSL on target")
+            except bsl5.BSL5Error:
+                raise bsl5.BSL5Error("--speed option not supported by BSL on target")
 
         # configure the buffer
         #~ self.detect_buffer_size()
