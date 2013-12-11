@@ -82,7 +82,7 @@ class BSL(object):
         answer = self.bsl(BSL_CHANGEBAUD, packet, expect=0)
 
     def BSL_SETMEMOFFSET(self, address_hi_bits):
-        packet = struct.pack('<HH', address_hi_bits, 0)
+        packet = struct.pack('<HH', 0, address_hi_bits)
         answer = self.bsl(BSL_SETMEMOFFSET, packet, expect=0)
 
     def BSL_LOADPC(self, address):
