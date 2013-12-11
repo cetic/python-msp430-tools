@@ -69,6 +69,7 @@ class SerialBSL5(bsl5.BSL5):
         self.blindWrite = False
         # delay after control line changes
         self.control_delay = 0.05
+        self.parity=serial.PARITY_EVEN
 
 
     def open(self, port=0, baudrate=9600, ignore_answer=False):
@@ -78,7 +79,7 @@ class SerialBSL5(bsl5.BSL5):
             self.serial = serial.serial_for_url(
                 port,
                 baudrate=baudrate,
-                parity=serial.PARITY_EVEN,
+                parity=self.parity,
                 stopbits=serial.STOPBITS_ONE,
                 timeout=1,
             )
@@ -86,7 +87,7 @@ class SerialBSL5(bsl5.BSL5):
             self.serial = serial.Serial(
                 port,
                 baudrate=baudrate,
-                parity=serial.PARITY_EVEN,
+                parity=self.parity,
                 stopbits=serial.STOPBITS_ONE,
                 timeout=1,
             )
