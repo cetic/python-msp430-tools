@@ -59,7 +59,7 @@ setup(
             'scripts/msp430-tool',
             ],
     license="Simplified BSD License",
-    long_description=open('README.txt').read(),
+    long_description=open('README_ORIG.txt').read(),
     classifiers = [
 #        'Development Status :: 5 - Production/Stable',
         'Development Status :: 4 - Beta',
